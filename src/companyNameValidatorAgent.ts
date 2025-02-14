@@ -20,13 +20,15 @@ export async function companyNameValidatorAgent(companyName: string) {
         content:
           "You will be given a company name and you need to return a score between 0 and 100 " +
           "indicating how likely it is that the company name is real. " +
-          "You will also return a reason for your score.",
+          "You will also return a reason for your score. " +
+          "Invalid company names can include numbers, special characters, or be similar to the following: " +
+          "My Company Name 123, Another Company Name 1, This is a test 3, Google 1 2 3, etc.",
       },
       { role: "user", content: `validate the company name: ${companyName}` },
     ],
     response_format: zodResponseFormat(
       CompanyNameResponse,
-      "company_name_response",
+      "company_name_response"
     ),
   });
 
