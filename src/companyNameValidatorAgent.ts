@@ -24,7 +24,9 @@ export async function companyNameValidatorAgent(companyName: string) {
             "indicating how likely it is that the company name is real. " +
             "You will also return a reason for your score. " +
             "You may use the search function to look up information about the company, " +
-            "if you are unsure if the company name is real. Only call search if you are unsure.",
+            "if you are unsure if the company name is real. Only call search if you are unsure." +
+            "If it is obvious it uses a pattern like Company 1 or Company !, return a score of 0 " +
+            "and a reason that it is a generic name without calling search.",
         },
         {
           role: "user",
