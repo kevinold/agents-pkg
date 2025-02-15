@@ -1,5 +1,5 @@
 import axios from "axios";
-import { zodFunction } from "openai/helpers/zod";
+import { zodFunction, zodResponseFormat } from "openai/helpers/zod";
 import OpenAI from "openai/index";
 import { z } from "zod";
 
@@ -15,7 +15,7 @@ const client = new OpenAI({
 export async function companyNameValidatorAgent(companyName: string) {
   try {
     const completion = await client.beta.chat.completions.parse({
-      schema: CompanyNameResponse,
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
@@ -28,6 +28,10 @@ export async function companyNameValidatorAgent(companyName: string) {
         },
         { role: "user", content: `validate the company name: ${companyName}` },
       ],
+      response_format: zodResponseFormat(
+        CompanyNameResponse,
+        "company_validation"
+      ),
       tools: [
         zodFunction({
           name: "search",
@@ -35,7 +39,6 @@ export async function companyNameValidatorAgent(companyName: string) {
           function: search,
         }),
       ],
-      model: "gpt-4-0125-preview",
     });
 
     return completion.choices[0]?.message?.parsed;
