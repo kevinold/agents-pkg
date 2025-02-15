@@ -13,8 +13,8 @@ const client = new OpenAI({
 });
 
 export async function companyNameValidatorAgent(companyName: string) {
-  try {
-    const completion = await client.beta.chat.completions.parse({
+  const runner = await client.beta.chat.completions
+    .runTools({
       model: process.env.OPENAI_MODEL,
       messages: [
         {
@@ -24,9 +24,12 @@ export async function companyNameValidatorAgent(companyName: string) {
             "indicating how likely it is that the company name is real. " +
             "You will also return a reason for your score. " +
             "You may use the search function to look up information about the company, " +
-            "if you are unsure if the company name is real.",
+            "if you are unsure if the company name is real. Only call search if you are unsure.",
         },
-        { role: "user", content: `validate the company name: ${companyName}` },
+        {
+          role: "user",
+          content: `validate the company name: ${companyName}`,
+        },
       ],
       tools: [
         zodFunction({
@@ -39,56 +42,12 @@ export async function companyNameValidatorAgent(companyName: string) {
         CompanyNameResponse,
         "company_validation"
       ),
-    });
+    })
+    .on("message", (message) => console.log(message));
 
-    console.log("Completion:", completion);
-
-    const message = completion.choices[0]?.message;
-
-    // Handle tool calls
-    if (message?.tool_calls) {
-      const toolCall = message.tool_calls[0];
-      const searchResult = await search({
-        q: toolCall.function.parsed_arguments.q,
-      });
-
-      // Send follow-up with search results
-      const followUp = await client.beta.chat.completions.parse({
-        model: process.env.OPENAI_MODEL,
-        messages: [
-          {
-            role: "system",
-            content:
-              "You will be given a company name and you need to return a score between 0 and 100 " +
-              "indicating how likely it is that the company name is real. " +
-              "You will also return a reason for your score. ",
-          },
-          {
-            role: "user",
-            content: `validate the company name: ${companyName}`,
-          },
-          message,
-          {
-            role: "tool",
-            tool_call_id: toolCall.id,
-            content: JSON.stringify(searchResult),
-          },
-        ],
-        response_format: zodResponseFormat(
-          CompanyNameResponse,
-          "company_validation"
-        ),
-      });
-
-      const finalMessage = followUp.choices[0]?.message;
-      return finalMessage?.parsed || null;
-    }
-
-    return message?.parsed || null;
-  } catch (error) {
-    console.error("Error:", error);
-    return null;
-  }
+  const finalContent = await runner.finalContent();
+  console.log("Final content:", finalContent);
+  return finalContent;
 }
 
 async function search(args: { q: string }) {
